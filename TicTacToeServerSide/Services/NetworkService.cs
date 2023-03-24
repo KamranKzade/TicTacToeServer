@@ -49,7 +49,6 @@ namespace TicTacToeServerSide.Services
             while (true)
             {
                 serverSocket.BeginAccept(AcceptCallBack, null);
-
             }
         }
 
@@ -57,6 +56,7 @@ namespace TicTacToeServerSide.Services
         private static void AcceptCallBack(IAsyncResult ar)
         {
             Socket socket = null;
+
             try
             {
                 socket = serverSocket.EndAccept(ar);
@@ -67,6 +67,7 @@ namespace TicTacToeServerSide.Services
             }
 
             clientSockets.Add(socket);
+            
             Console.WriteLine($"{socket.RemoteEndPoint} connected");
             string t = "";
             if (!IsFirst)
@@ -79,6 +80,7 @@ namespace TicTacToeServerSide.Services
                 IsFirst = false;
                 t = "O";
             }
+            
             byte[] data = Encoding.ASCII.GetBytes(t);
             socket.Send(data);
 
