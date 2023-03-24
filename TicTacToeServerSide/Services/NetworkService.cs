@@ -18,6 +18,7 @@ namespace TicTacToeServerSide.Services
 
         public static bool IsFirst { get; private set; } = false;
         public static char[,] Points = new char[3, 3] { { '1', '2', '3' }, { '4', '5', '6' }, { '7', '8', '9' } };
+        private static Dictionary<EndPoint, string> Clients { get; set; } = new Dictionary<EndPoint, string>();
 
 
         public static void Start()
@@ -29,7 +30,6 @@ namespace TicTacToeServerSide.Services
             CloseAllSockets();
         }
 
-
         private static void CloseAllSockets()
         {
             foreach (var socket in clientSockets)
@@ -40,23 +40,21 @@ namespace TicTacToeServerSide.Services
             serverSocket.Close();
         }
 
-
         private static void SetupServer()
         {
             Console.WriteLine("Setting up server . . . ");
-            serverSocket.Bind(new IPEndPoint(IPAddress.Parse("10.2.13.15"), PORT));
+            serverSocket.Bind(new IPEndPoint(IPAddress.Parse("192.168.1.16"), PORT));
             serverSocket.Listen(2);
             while (true)
             {
                 serverSocket.BeginAccept(AcceptCallBack, null);
+
             }
         }
-
 
         private static void AcceptCallBack(IAsyncResult ar)
         {
             Socket socket = null;
-
             try
             {
                 socket = serverSocket.EndAccept(ar);
@@ -67,8 +65,12 @@ namespace TicTacToeServerSide.Services
             }
 
             clientSockets.Add(socket);
-            
-            Console.WriteLine($"{socket.RemoteEndPoint} connected");
+            byte[] bytes = new byte[1024];
+            int bytesReceived = socket.Receive(bytes);
+
+            string name = Encoding.ASCII.GetString(bytes, 0, bytesReceived);
+            Clients.Add(socket.RemoteEndPoint, name);
+            Console.WriteLine($"{name} connected");
             string t = "";
             if (!IsFirst)
             {
@@ -80,7 +82,6 @@ namespace TicTacToeServerSide.Services
                 IsFirst = false;
                 t = "O";
             }
-            
             byte[] data = Encoding.ASCII.GetBytes(t);
             socket.Send(data);
 
@@ -97,6 +98,8 @@ namespace TicTacToeServerSide.Services
             }
             catch (Exception)
             {
+                string name = "";
+                Clients.TryGetValue(current.RemoteEndPoint, out name);
                 Console.WriteLine("Client forcefully disconnected");
                 current.Close();
                 clientSockets.Remove(current);
@@ -140,7 +143,9 @@ namespace TicTacToeServerSide.Services
                 foreach (var item in clientSockets)
                 {
                     item.Send(data);
-                    Console.WriteLine($"Data sent to {item.RemoteEndPoint}");
+                    string name = "";
+                    Clients.TryGetValue(item.RemoteEndPoint, out name);
+                    Console.WriteLine($"Data sent to {name}");
                 }
             }
             else if (text == "exit")
@@ -148,6 +153,8 @@ namespace TicTacToeServerSide.Services
                 current.Shutdown(SocketShutdown.Both);
                 current.Close();
                 clientSockets.Remove(current);
+                string name = "";
+                Clients.TryGetValue(current.RemoteEndPoint, out name);
                 Console.WriteLine($"{current.RemoteEndPoint} disconnected");
                 return;
             }
@@ -161,7 +168,6 @@ namespace TicTacToeServerSide.Services
 
             current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
         }
-
 
         private static string ConvertString(char[,] points)
         {
