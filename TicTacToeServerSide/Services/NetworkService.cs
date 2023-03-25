@@ -48,7 +48,6 @@ namespace TicTacToeServerSide.Services
             while (true)
             {
                 serverSocket.BeginAccept(AcceptCallBack, null);
-
             }
         }
 
@@ -72,6 +71,7 @@ namespace TicTacToeServerSide.Services
             Clients.Add(socket.RemoteEndPoint, name);
             Console.WriteLine($"{name} connected");
             string t = "";
+    
             if (!IsFirst)
             {
                 IsFirst = true;
